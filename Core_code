@@ -1,0 +1,53 @@
+import pyperclip
+from pynput import keyboard
+from pynput.keyboard import Controller  # To control the keyboard for pasting
+import time
+
+# Keyboard controller to simulate key presses
+kb = Controller()
+
+# Data list (to be entered by the user)
+data = []
+
+# Flag to prevent pasting more than one line at a time
+line_pasted = False
+
+# Function to handle key presses
+def on_press(key):
+    global line_pasted
+
+    try:
+        # Check if "Ctrl" is pressed
+        if (key == keyboard.Key.ctrl_l or key == keyboard.Key.ctrl_r) and not line_pasted:
+            if data:
+                line_to_paste = data.pop(0)
+                pyperclip.copy(line_to_paste)  # Copy the first line to clipboard
+                print(f'Pasted: {line_to_paste}')
+
+                # Simulate pressing "Ctrl + V" to paste in the active window
+                time.sleep(0.1)  # Small delay to ensure clipboard is updated
+                with kb.pressed(keyboard.Key.ctrl):
+                    kb.press('v')
+                    kb.release('v')
+
+                line_pasted = True  # Prevent continuous pasting until the next release
+            else:
+                print("No more data to paste.")
+
+    except AttributeError:
+        pass
+
+# Function to handle key releases
+def on_release(key):
+    global line_pasted
+
+    # Once the Ctrl key is released, allow pasting again on the next press
+    if key == keyboard.Key.ctrl_l or key == keyboard.Key.ctrl_r:
+        line_pasted = False
+
+# Ask the user for the list of data
+data = input("Enter your data lines (comma separated): ").split(',')
+
+# Listener setup to track key presses and releases
+with keyboard.Listener(on_press=on_press, on_release=on_release) as listener:
+    listener.join()
